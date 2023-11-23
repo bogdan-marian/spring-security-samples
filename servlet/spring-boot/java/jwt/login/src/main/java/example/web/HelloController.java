@@ -33,4 +33,10 @@ public class HelloController {
 		return "Hello, " + authentication.getName() + "!";
 	}
 
+	@GetMapping("/openEndpoint")
+	public String openEndpoint() {
+		return "Hello, Open endpoint!";
+	}
+
+
 }

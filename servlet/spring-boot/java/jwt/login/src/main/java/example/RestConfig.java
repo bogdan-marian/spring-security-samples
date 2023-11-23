@@ -52,18 +52,23 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class RestConfig {
 
-	@Value("${jwt.public.key}")
-	RSAPublicKey key;
+    @Value("${jwt.public.key}")
+    RSAPublicKey key;
 
-	@Value("${jwt.private.key}")
-	RSAPrivateKey priv;
+    @Value("${jwt.private.key}")
+    RSAPrivateKey priv;
 
-	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		// @formatter:off
+    private static final String[] WHITE_LIST_URL = {"/openEndpoint"};
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // @formatter:off
 		http
-				.authorizeHttpRequests((authorize) -> authorize
-						.anyRequest().authenticated()
+				.authorizeHttpRequests(
+						req -> req.requestMatchers(WHITE_LIST_URL)
+								.permitAll()
+								.anyRequest()
+								.authenticated()
 				)
 				.csrf((csrf) -> csrf.ignoringRequestMatchers("/token"))
 				.httpBasic(Customizer.withDefaults())
@@ -74,12 +79,12 @@ public class RestConfig {
 						.accessDeniedHandler(new BearerTokenAccessDeniedHandler())
 				);
 		// @formatter:on
-		return http.build();
-	}
+        return http.build();
+    }
 
-	@Bean
-	UserDetailsService users() {
-		// @formatter:off
+    @Bean
+    UserDetailsService users() {
+        // @formatter:off
 		return new InMemoryUserDetailsManager(
 			User.withUsername("user")
 				.password("{noop}password")
@@ -87,18 +92,20 @@ public class RestConfig {
 				.build()
 		);
 		// @formatter:on
-	}
+    }
 
-	@Bean
-	JwtDecoder jwtDecoder() {
-		return NimbusJwtDecoder.withPublicKey(this.key).build();
-	}
+    @Bean
+    JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withPublicKey(this.key)
+                .build();
+    }
 
-	@Bean
-	JwtEncoder jwtEncoder() {
-		JWK jwk = new RSAKey.Builder(this.key).privateKey(this.priv).build();
-		JWKSource<SecurityContext> jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
-		return new NimbusJwtEncoder(jwks);
-	}
+    @Bean
+    JwtEncoder jwtEncoder() {
+        JWK jwk = new RSAKey.Builder(this.key).privateKey(this.priv)
+                .build();
+        JWKSource<SecurityContext> jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
+        return new NimbusJwtEncoder(jwks);
+    }
 
 }
